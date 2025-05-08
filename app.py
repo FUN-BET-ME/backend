@@ -1,45 +1,42 @@
 from flask import Flask, request, jsonify
 import os
 import requests
+from dotenv import load_dotenv
 
-# Dummy token decoder (replace with actual secure logic)
-def load_email_from_token(token):
-    # In production, decode and validate the token securely
-    token_map = {
-        "test123": "testuser@fun-bet.me",
-        "abc456": "abc@fun-bet.me"
-    }
-    return token_map.get(token)
+load_dotenv()
 
 app = Flask(__name__)
 
+# Simple health check route
 @app.route('/')
 def home():
-    return "Backend is running!"
+    return 'Backend is running!'
 
+# Verification route
 @app.route('/verify')
 def verify():
     token = request.args.get("token")
-    email = load_email_from_token(token)
+    
+    def load_email_from_token(tkn):
+        # Replace with actual logic to decode the token if needed
+        return tkn  # assuming token is email for simplicity
 
+    email = load_email_from_token(token)
     if not email:
-        return jsonify({"status": "error", "message": "Invalid or expired token"}), 400
+        return "Invalid or expired token", 400
 
     headers = {
-        "Authorization": f"Zoho-oauthtoken {os.environ.get('ZOHO_ACCESS_TOKEN')}"
+        "Authorization": f"Zoho-oauthtoken {os.getenv('ZOHO_ACCESS_TOKEN')}"
     }
     data = {
-        "data": [
-            {
-                "Email": email,
-                "Lead_Source": "Landing Page"
-            }
-        ]
+        "data": [{"Email": email, "Lead_Source": "Landing Page"}]
     }
-
-    response = requests.post(os.environ.get("ZOHO_API_URL"), headers=headers, json=data)
+    response = requests.post(os.getenv('ZOHO_API_URL'), headers=headers, json=data)
 
     if response.ok:
-        return jsonify({"status": "ok", "message": "Email verified and added!"})
+        return "Email verified and added!"
     else:
-        return jsonify({"status": "error", "message": f"Error from Zoho: {response.text}"}), 500
+        return f"Error: {response.text}", 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
