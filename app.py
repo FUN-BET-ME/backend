@@ -3,43 +3,50 @@ import os
 import requests
 from dotenv import load_dotenv
 
-# Load .env
+# Load .env from project root
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '..', '.env'))
+rootdir = os.path.abspath(os.path.join(basedir, '..'))
+load_dotenv(os.path.join(rootdir, '.env'))
 
-# Point Flask to parent directory for static assets
-app = Flask(__name__, static_folder=os.path.abspath(os.path.join(basedir, '..')), static_url_path='')
+app = Flask(__name__)
 
+# Serve index.html from root directory
 @app.route('/')
 def serve_index():
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(rootdir, 'index.html')
 
+# Serve static files from root (e.g. logo.png, styles.css)
 @app.route('/<path:filename>')
-def serve_static_files(filename):
-    return send_from_directory(app.static_folder, filename)
+def serve_static(filename):
+    return send_from_directory(rootdir, filename)
 
+# Zoho lead verification route
 @app.route('/verify')
 def verify():
     token = request.args.get("token")
 
     def load_email_from_token(tkn):
-        return tkn  # still assuming raw email token
+        return tkn  # replace with real decoding logic if needed
 
     email = load_email_from_token(token)
     if not email:
         return jsonify({"error": "Invalid or expired token"}), 400
 
-    access_token = os.getenv("ZOHO_ACCESS_TOKEN")
-    api_url = os.getenv("ZOHO_API_URL")
+    zoho_token = os.getenv("ZOHO_ACCESS_TOKEN")
+    zoho_url = os.getenv("ZOHO_API_URL")
 
-    if not access_token or not api_url:
+    if not zoho_token or not zoho_url:
         return jsonify({"error": "Missing Zoho API configuration"}), 500
 
-    headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
-    data = {"data": [{"Email": email, "Lead_Source": "Landing Page"}]}
+    headers = {
+        "Authorization": f"Zoho-oauthtoken {zoho_token}"
+    }
+    data = {
+        "data": [{"Email": email, "Lead_Source": "Landing Page"}]
+    }
 
     try:
-        response = requests.post(api_url, headers=headers, json=data)
+        response = requests.post(zoho_url, headers=headers, json=data)
         if response.ok:
             return jsonify({"message": "Email verified and added!"})
         else:
