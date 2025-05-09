@@ -15,12 +15,12 @@ app = Flask(__name__)
 def serve_index():
     return send_from_directory(rootdir, 'index.html')
 
-# Serve static files (logo.png, css etc.)
+# Serve static files like logo, css
 @app.route('/<path:filename>')
 def serve_static(filename):
     return send_from_directory(rootdir, filename)
 
-# Helper: Get fresh Zoho access token from refresh token
+# Get fresh Zoho access token
 def get_access_token():
     refresh_token = os.getenv("ZOHO_REFRESH_TOKEN")
     client_id = os.getenv("ZOHO_CLIENT_ID")
@@ -35,20 +35,24 @@ def get_access_token():
     })
 
     if response.ok:
-        return response.json().get("access_token")
+        return response.json().get("access_token"), None
     else:
-        return None
+        print("Zoho Token Error:", response.text)
+        return None, response.text
 
-# Zoho lead API route
+# Zoho verification route
 @app.route('/verify', methods=["GET", "POST"])
 def verify():
     token = request.args.get("token")
     if not token:
         return jsonify({"error": "Invalid or expired token"}), 400
 
-    access_token = get_access_token()
+    access_token, error_detail = get_access_token()
     if not access_token:
-        return jsonify({"error": "Failed to fetch Zoho token"}), 500
+        return jsonify({
+            "error": "Failed to fetch Zoho token",
+            "details": error_detail
+        }), 500
 
     zoho_url = os.getenv("ZOHO_API_URL")
     headers = {
