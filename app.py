@@ -20,7 +20,7 @@ def serve_index():
 def serve_static(filename):
     return send_from_directory(rootdir, filename)
 
-# Get fresh Zoho access token
+# Get fresh Zoho access token (returns token and error text)
 def get_access_token():
     refresh_token = os.getenv("ZOHO_REFRESH_TOKEN")
     client_id = os.getenv("ZOHO_CLIENT_ID")
@@ -37,10 +37,10 @@ def get_access_token():
     if response.ok:
         return response.json().get("access_token"), None
     else:
-        print("Zoho Token Error:", response.text)
+        print("❌ Zoho Token Error:", response.text)
         return None, response.text
 
-# Zoho verification route
+# Email verification route
 @app.route('/verify', methods=["GET", "POST"])
 def verify():
     token = request.args.get("token")
@@ -67,9 +67,12 @@ def verify():
 
     response = requests.post(zoho_url, headers=headers, json=data)
     if response.ok:
-        return jsonify({"message": "Email verified and lead added to Zoho!"})
+        return jsonify({"message": "✅ Email verified and lead added to Zoho!"})
     else:
-        return jsonify({"error": response.text}), 500
+        return jsonify({
+            "error": "Zoho CRM error",
+            "details": response.text
+        }), 500
 
 if __name__ == "__main__":
     app.run()
