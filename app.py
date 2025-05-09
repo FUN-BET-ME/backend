@@ -21,7 +21,8 @@ def serve_static(filename):
     return send_from_directory(rootdir, filename)
 
 # Zoho lead verification route
-@app.route('/verify')
+@app.route('/verify', methods=["GET", "POST"])
+
 def verify():
     token = request.args.get("token")
 
